@@ -12,8 +12,8 @@ private:
   const float fs;
   SineOscillator* formant1;
   SineOscillator* formant2;
-  float phase;
-  float incr;
+  float phase = 0;
+  float incr = 0;
 public:
   VosimOscillator(float samplerate, SineOscillator* osc2, SineOscillator* osc1) :
     fs(samplerate), formant1(osc1) , formant2(osc2) {}
@@ -46,26 +46,45 @@ public:
   }
   using Oscillator::generate;
   float generate(float fm){
-    phase -= incr+fm;
-    if(phase <= 0.0){
-      phase += 1.0;
-      formant1->reset();
-      formant2->reset();
-    }
     float s1 = formant1->generate();
     float s2 = formant2->generate();
-    return (s1*s1 + s2*s2)*phase*0.5;
+    float sample = (s1*s1 + s2*s2)*phase - 1;
+    float dt = incr * (1 + fm);
+    // sample = 2*phase-1;
+    // sample -= polyblep(phase, dt);
+    // polyblep works on sawtooth but doesn't help vosim
+    phase -= dt;
+    if(phase <= 0.0){
+      phase += 1.0;
+#if 0
+      float ph = getPhase();
+      formant1->setPhase(ph);
+      formant2->setPhase(ph);
+#else
+      formant1->reset();
+      formant2->reset();
+#endif
+    }
+    return sample;
   }
   float generate(){
+    float s1 = formant1->generate();
+    float s2 = formant2->generate();
+    float sample = (s1*s1 + s2*s2)*phase - 1;
+    // sample -= polyblep(1-phase, incr);
     phase -= incr;
     if(phase <= 0.0){
       phase += 1.0;
+#if 0
+      float ph = getPhase();
+      formant1->setPhase(ph);
+      formant2->setPhase(ph);
+#else
       formant1->reset();
       formant2->reset();
+#endif
     }
-    float s1 = formant1->generate();
-    float s2 = formant2->generate();
-    return (s1*s1 + s2*s2)*phase*0.5;
+    return sample;
   }
   static VosimOscillator* create(float sr){
     SineOscillator* f1 = SineOscillator::create(sr);

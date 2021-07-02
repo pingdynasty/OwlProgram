@@ -182,7 +182,6 @@ public:
   void clear(){
     // memset(buffer, 0, size*channels*sizeof(float));
   }
-  void add(AudioBuffer& other) {}
 };
 
 void WEB_processBlock(float** inputs, float** outputs){

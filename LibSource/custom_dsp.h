@@ -13,6 +13,7 @@
 #undef pow
 #undef log
 #undef rand
+#undef clamp
 
 /** PIs
 */

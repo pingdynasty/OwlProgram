@@ -231,11 +231,21 @@ public:
     for(int i=0; i<PatchMetadata::parameter_count; ++i){
       const PatchMetadata::Control& ctrl = PatchMetadata::parameters[i];
       PatchParameterId pid = (PatchParameterId)ctrl.id;
-      registerParameter(pid, ctrl.name);
       if(ctrl.flags & CONTROL_OUTPUT){
 	if(outputindex < nof_outs)
 	  outputs[outputindex] = OutputParameter(pid, ctrl.name, FloatArray(buffers[channels+outputindex], getBlockSize()));
 	outputindex++;
+      }
+      size_t len = strlen(ctrl.name);
+      if(ctrl.flags & CONTROL_OUTPUT && ctrl.name[len-1] != '>'){
+	// add a > at end of name
+	char name[len+2];
+	strcpy(name, ctrl.name);
+	name[len] = '>';
+	name[len+1] = '\0';
+	registerParameter(pid, name);
+      }else{
+	registerParameter(pid, ctrl.name);
       }
     }
     for(int i=0; i<PatchMetadata::button_count; ++i){

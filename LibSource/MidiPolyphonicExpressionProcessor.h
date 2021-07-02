@@ -1,20 +1,27 @@
 #ifndef __MidiPolyphonicExpressionProcessor_h__
 #define __MidiPolyphonicExpressionProcessor_h__
 
+#include "MidiProcessor.h"
+#include "SignalGenerator.h"
+#include "VoiceAllocator.h"
+
 /**
- * Implementation of MPE, MidiPolyphonicExpression, message processing.
+ * Implementation of MPE (MIDI Polyphonic Expression) message processing.
  * We are controlling an AbstractSynth with:
  * X: Pitch Bend: setFrequency()
  * Y: CC74 or CC1 : setModulation()
  * Z: Channel Pressure : setPressure()
  */
 template<class SynthVoice, int VOICES>
-class MidiPolyphonicExpressionProcessor : public MidiProcessor {
+class MidiPolyphonicExpressionProcessor : public VoiceAllocator<SynthVoice, VOICES> {
 // routes five per-note messages (Note On, Note Off, Pitch Bend, CC74 and Channel Pressure/Aftertouch)
 // to the voice assigned to each channel
+  typedef VoiceAllocator<SynthVoice, VOICES> Allocator;
 protected:
-  SynthVoice* voice[VOICES];
+  static const uint16_t TAKEN = 0xffff;
   uint8_t notes[VOICES];
+  uint16_t allocation[VOICES];
+  uint16_t allocated;
   float pressure[VOICES];
   float modulation[VOICES];
   uint8_t master_channel = 1;
@@ -26,48 +33,91 @@ protected:
   float note_pitchbend_range = 48;
   float zone_pitchbend_range = 2;
   uint16_t rpn = 0;
+  bool dosustain = false;
+  void take(uint8_t ch, MidiMessage msg){
+    release(ch);
+    notes[ch] = msg.getNote();
+    allocation[ch] = TAKEN;
+    Allocator::voice[ch]->noteOn(msg);
+  }
+  void release(uint8_t ch){
+    allocation[ch] = ++allocated;
+    if(!dosustain)
+      Allocator::voice[ch]->gate(false);
+  }
 public:
   MidiPolyphonicExpressionProcessor() {}
   virtual ~MidiPolyphonicExpressionProcessor(){};
-  // class RpnMessage {
-  // uint8_t ch;
-  // uint16_t rpn;
-  // uint16_t value;
-  // };
-  // RpnMessage getMCM(){
-  // returns the MPE Configuration Message
-  // ch0 cc 100:06 101:00 06:VOICES
-  // }
+
+  uint8_t findFreeVoice(MidiMessage msg){
+    uint8_t note = msg.getNote();
+    uint16_t minval = USHRT_MAX;
+    uint8_t minidx = 0;
+    // take oldest free voice, to allow voices to ring out
+    for(int i=0; i<VOICES; ++i){
+      if(notes[i] == note){
+	minidx = i;
+	break;
+      }
+      if(allocation[i] < minval){
+	minidx = i;
+	minval = allocation[i];
+      }
+    }
+    // take oldest voice
+    return minidx;
+  }
+
+  void releaseVoicesForNote(MidiMessage msg){
+    uint8_t note = msg.getNote();
+    for(int i=0; i<VOICES; ++i)
+      if(notes[i] == note)
+	release(i);
+  }
+
   void noteOn(MidiMessage msg){
-    uint8_t ch = getNoteChannel(msg);
-    if(ch < VOICES)
-      voice[ch]->noteOn(msg);
+    if(isMasterChannel(msg)){ // Zone message
+      uint8_t idx = findFreeVoice(msg);
+      take(idx, msg);
+    }else{
+      uint8_t idx = getNoteChannel(msg);
+      take(idx, msg);
+    }
   }
+
   void noteOff(MidiMessage msg){
-    uint8_t ch = getNoteChannel(msg);
-    if(ch < VOICES)
-      voice[ch]->noteOff(msg);
+    if(isMasterChannel(msg)){ // Zone message
+      releaseVoicesForNote(msg);
+    }else{
+      uint8_t ch = getNoteChannel(msg);
+      if(ch < VOICES)
+	release(ch);
+    }
   }
+
   void setPitchBendRange(float range){
     zone_pitchbend_range = range;
-  }    
+  }
+
   void controlChange(MidiMessage msg){
     switch(msg.getControllerNumber()){
     case MIDI_CC_MODULATION: // handle modulation same as CC74 for non-MPE compatibility
     /* case MIDI_CC_FREQUENCY_CUTOFF: { */
     case 74: {
-// All MPE receivers are required to respond to CC #74 at the Zone and Note level. If a device receives CC #74
-// on both a Master Channel and Member Channel, it must combine such data meaningfully and separately for
-// each sounding note.
-      uint8_t ch = getNoteChannel(msg);
-      float value = msg.getControllerValue()/127.0f;
-      if(ch < VOICES){
-	voice[ch]->setModulation(zone_modulation + value);
-	modulation[ch] = value;
-      }else if(isMasterChannel(msg)){ // Zone message
+      // All MPE receivers are required to respond to CC #74 at the Zone and Note level. If a device receives CC #74
+      // on both a Master Channel and Member Channel, it must combine such data meaningfully and separately for
+      // each sounding note.
+      float value = msg.getControllerValue()/128.0f;
+      if(isMasterChannel(msg)){ // Zone message
 	for(int i=0; i<VOICES; ++i)
-	  voice[i]->setModulation(value + modulation[i]);
+	  Allocator::voice[i]->setModulation(value + modulation[i]);
 	zone_modulation = value;
+      }else{
+	uint8_t ch = getNoteChannel(msg);
+	if(ch < VOICES){
+	  Allocator::voice[ch]->setModulation(zone_modulation + value);
+	  modulation[ch] = value;
+	}
       }
       break;
     }
@@ -119,7 +169,7 @@ public:
       }
       break;
     case MIDI_ALL_NOTES_OFF:
-      allNotesOff();
+      Allocator::allNotesOff();
       break;
     }
   }
@@ -138,114 +188,59 @@ public:
   }
   void pitchbend(MidiMessage msg){
     // Pitch Bend is both a Zone Message and a Note Level Message. If an MPE synthesizer receives Pitch Bend (for example) on both a Master and a Member Channel, it must combine the data meaningfully. The same is true for Channel Pressure. 
-    uint8_t ch = getNoteChannel(msg);
-    float value = note_pitchbend_range*msg.getPitchBend()/8192.0f;
-    if(ch < VOICES){ // Note level message
-      voice[ch]->setPitchBend(zone_pitchbend + value);
-    }else if(isMasterChannel(msg)){ // Zone message
+    if(isMasterChannel(msg)){ // Zone message
+      float value = zone_pitchbend_range*msg.getPitchBend()/8192.0f;
       float delta = value - zone_pitchbend;
       for(int i=0; i<VOICES; ++i)
-	voice[i]->setPitchBend(voice[i]->getPitchBend()+delta);
+	Allocator::voice[i]->setPitchBend(Allocator::voice[i]->getPitchBend()+delta);
       zone_pitchbend = value;
+    }else{
+      float value = note_pitchbend_range*msg.getPitchBend()/8192.0f;
+      uint8_t ch = getNoteChannel(msg);
+      if(ch < VOICES){ // Note level message
+	Allocator::voice[ch]->setPitchBend(zone_pitchbend + value);
+      }
     }
   }
   void channelPressure(MidiMessage msg){
-    uint8_t ch = getNoteChannel(msg);
-    float value = msg.getChannelPressure()/127.0f;
-    if(ch < VOICES){ // Note level message
-      voice[ch]->setPressure(zone_pressure + value);
-      pressure[ch] = value;
-    }else if(isMasterChannel(msg)){ // Zone message
-// All MPE receivers are required to respond to CC #74 at the Zone and Note level. If a device receives CC #74
-// on both a Master Channel and Member Channel, it must combine such data meaningfully and separately for
-// each sounding note.
+    // All MPE receivers are required to respond to Channel Pressure at the Note and Zone level.
+    // If a device receives Channel Pressure on both a Master Channel and Member Channel it must
+    // combine such data meaningfully and separately for each sounding note.
+    float value = msg.getChannelPressure()/128.0f;
+    if(isMasterChannel(msg)){ // Zone message
       for(int i=0; i<VOICES; ++i)
-	voice[i]->setPressure(value + pressure[i]);
+	Allocator::voice[i]->setPressure(value + pressure[i]);
       zone_pressure = value;
+    }else{
+      uint8_t ch = getNoteChannel(msg);
+      if(ch < VOICES){ // Note level message
+	Allocator::voice[ch]->setPressure(zone_pressure + value);
+	pressure[ch] = value;
+      }
     }
   }
   void polyKeyPressure(MidiMessage msg){
-    // Polyphonic Key Pressure may be used with notes on the Master Channel, but not on
-    // other Channels
+    // Polyphonic Key Pressure may be used with notes on the Master Channel, but not on other Channels
     if(isMasterChannel(msg)){
       uint8_t note = msg.getNote();
       for(int i=0; i<VOICES; ++i)
-	if(voice[i]->getNote() == note)
-	  voice[i]->setPressure(msg.getPolyKeyPressure()/127.0f);
+	if(Allocator::voice[i]->getNote() == note)
+	  Allocator::voice[i]->setPressure(msg.getPolyKeyPressure()/128.0f);
     }
   }
-  void allNotesOff() {
-    for(int i=0; i<VOICES; ++i)
-      voice[i]->gate(false);      
+  bool getSustain(){
+    return dosustain;
   }
-  void setVoice(size_t index, SynthVoice* obj){
-    if(index < VOICES)
-      voice[index] = obj;
-  }
-  SynthVoice* getVoice(size_t index){
-    if(index < VOICES)
-      return voice[index];
-    return NULL;
-  }
-  void setParameter(uint8_t parameter_id, float value){
-    for(int i=0; i<VOICES; ++i)
-      voice[i]->setParameter(parameter_id, value);
-  }
-};
-
-
-template<class SynthVoice, int VOICES>
-class MidiPolyphonicExpressionSignalGenerator : public MidiPolyphonicExpressionProcessor<SynthVoice, VOICES>, public SignalGenerator {
-private:
-  FloatArray buffer;
-public:
-  MidiPolyphonicExpressionSignalGenerator(FloatArray buffer) : buffer(buffer) {}
-  virtual ~MidiPolyphonicExpressionSignalGenerator(){};
-  float generate(){
-    float sample = this->voice[0]->generate();
-    for(int i=1; i<VOICES; ++i)
-      sample += this->voice[i]->generate();
-    return sample;
-  }
-  void generate(FloatArray output){
-    this->voice[0]->generate(output);
-    for(int i=1; i<VOICES; ++i){
-      this->voice[i]->generate(buffer);
-      output.add(buffer);
+  void setSustain(bool value){
+    if(!value && dosustain){
+      // gate off any sustained (but not active) voices
+      for(int i=0; i<VOICES; ++i){ // todo!
+      // 	if(allocation[i] != TAKEN)
+	Allocator::voice[i]->gate(false);
+      }
     }
+    dosustain = value;
   }
-  static MidiPolyphonicExpressionSignalGenerator<SynthVoice, VOICES>* create(size_t blocksize){
-    FloatArray buffer = FloatArray::create(blocksize);    
-    return new MidiPolyphonicExpressionSignalGenerator<SynthVoice, VOICES>(buffer);
-  }
-  static void destroy(MidiPolyphonicExpressionSignalGenerator<SynthVoice, VOICES>* obj){
-    FloatArray::destroy(obj->buffer);
-    delete obj;
-  }
-};
-
-template<class SynthVoice, int VOICES>
-class MidiPolyphonicExpressionMultiSignalGenerator : public MidiPolyphonicExpressionProcessor<SynthVoice, VOICES>, public MultiSignalGenerator {
-private:
-  AudioBuffer* buffer;
-public:
-  MidiPolyphonicExpressionMultiSignalGenerator(AudioBuffer* buffer) : buffer(buffer) {}
-  virtual ~MidiPolyphonicExpressionMultiSignalGenerator(){};
-  static MidiPolyphonicExpressionMultiSignalGenerator<SynthVoice, VOICES>* create(size_t channels, size_t blocksize){
-    AudioBuffer* buffer = AudioBuffer::create(channels, blocksize);    
-    return new MidiPolyphonicExpressionMultiSignalGenerator<SynthVoice, VOICES>(buffer);
-  }
-  static void destroy(MidiPolyphonicExpressionMultiSignalGenerator<SynthVoice, VOICES>* obj){
-    AudioBuffer::destroy(obj->buffer);
-    delete obj;
-  }
-  void generate(AudioBuffer& output){
-    this->voice[0]->generate(output);
-    for(int i=1; i<VOICES; ++i){
-      this->voice[i]->generate(*buffer);
-      output.add(*buffer);
-    }
-  }  
 };
 
 #endif /* __MidiPolyphonicExpressionProcessor_h__ */

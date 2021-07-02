@@ -41,6 +41,7 @@
 #undef max
 #undef min
 #undef abs
+#undef clamp
 // #include <algorithm>
 
 // #include <iostream>

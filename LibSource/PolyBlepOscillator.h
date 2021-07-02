@@ -25,6 +25,9 @@ public:
   float getPulseWidth();
   void setPhase(float phase);
   float getPhase();
+  void reset(){
+    setPhase(0);
+  }
   float generate();
   float generate(float fm);
   /* put a block of output samples into @param output */

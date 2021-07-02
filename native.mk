@@ -21,7 +21,7 @@ CPPFLAGS    += -I$(LIBSOURCE)
 CPPFLAGS    += -I$(BUILDSOURCE)
 CPPFLAGS    += -I$(TESTPATCHES)
 CPPFLAGS    += -ILibraries -ILibraries/KissFFT
-CXXFLAGS     = -std=c++14
+CXXFLAGS     = -std=gnu++17
 LDLIBS       = -lm
 LDFLAGS      = -Wl,--gc-sections
 
@@ -74,7 +74,7 @@ run: native
 	@$(BUILD)/Test/patch
 
 grind: native
-	valgrind --leak-check=full $(BUILD)/Test/patch
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes $(BUILD)/Test/patch
 
 test: $(TESTPATCHES)/PatchTest.cpp $(DEPS) $(OBJS)
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(TESTPATCHES)/PatchTest.cpp -I$(BUILD) $(OBJS) -o $(BUILD)/Test/$@

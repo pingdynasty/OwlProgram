@@ -47,7 +47,7 @@ uint32_t arm_rand32(){
 }
 
 float randf(){
-  return arm_rand32()/4294967296.0f;
+  return arm_rand32()*(1/4294967296.0f);
 }
 
 float arm_sqrtf(float in){

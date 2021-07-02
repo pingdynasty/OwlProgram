@@ -29,12 +29,12 @@
 #ifndef __EnvelopeTestPatch_hpp__
 #define __EnvelopeTestPatch_hpp__
 
-#include "StompBox.h"
-#include "Envelope.h"
+#include "Patch.h"
+#include "LinearAdsrEnvelope.h"
 
 class EnvelopeTestPatch : public Patch {
 public:
-  AdsrEnvelope env;
+  LinearAdsrEnvelope env;
   FloatArray envBuffer;
   EnvelopeTestPatch():
     env(getSampleRate())

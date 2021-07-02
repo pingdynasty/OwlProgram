@@ -6,80 +6,111 @@
 /**
  * Ramp oscillator generates rising output values from -1 to 1.
  */
-class RampOscillator : public Oscillator {
-private:
-  float mul;
-  float phase;
-  float incr;
+class RampOscillator : public OscillatorTemplate<RampOscillator> {
 public:
-  RampOscillator(float sr=48000) : phase(0.0f), incr(0.0f) {
+  static constexpr float begin_phase = -1;
+  static constexpr float end_phase = 1;
+  float getSample(){
+    return phase;
   }
-  RampOscillator(float freq, float sr) : phase(0.0f){
-    setSampleRate(sr);
-    setFrequency(freq);
+};
+
+class AntialisedRampOscillator : public OscillatorTemplate<AntialisedRampOscillator> {
+public:
+  static constexpr float begin_phase = -1;
+  static constexpr float end_phase = 1;
+  float getSample(){
+    return phase - polyblep(phase, incr);
   }
-  void reset(){
-    phase = -1;
+};
+
+class TriangleOscillator : public OscillatorTemplate<TriangleOscillator> {
+public:
+  static constexpr float begin_phase = -1;
+  static constexpr float end_phase = 1;
+  float getSample(){
+    return -2 * (fabsf(phase) - 0.5);
   }
-  void setSampleRate(float sr){
-    mul = 2.0f/sr;
+};
+
+class SquareOscillator : public OscillatorTemplate<SquareOscillator> {
+protected:
+  float pw = 0.5;
+public:
+  static constexpr float begin_phase = 0;
+  static constexpr float end_phase = 1;
+  /**
+   * Set pulse width to a value between 0 and 1
+   */
+  void setPulseWidth(float value){
+    pw = value;
   }
-  float getSampleRate(){
-    return 2.0f/mul;
+  float getSample(){
+    return phase < pw ? 1 : -1;
   }
-  void setFrequency(float freq){
-    incr = freq*mul;
+};
+
+class InvertedSquareOscillator : public OscillatorTemplate<InvertedSquareOscillator> {
+protected:
+  float pw = 0.5;
+public:
+  static constexpr float begin_phase = 0;
+  static constexpr float end_phase = 1;
+  /**
+   * Set pulse width to a value between 0 and 1
+   */
+  void setPulseWidth(float value){
+    pw = value;
   }
-  float getFrequency(){
-    return incr/mul;
+  float getSample(){
+    return phase < pw ? -1 : 1;
   }
-  void setPhase(float ph){
-    phase = ph/M_PI - 1.0f; // internal phase is -1 to 1
+};
+
+class AntialiasedSquareOscillator : public OscillatorTemplate<AntialiasedSquareOscillator> {
+protected:
+  float pw = 0.5f;
+public:
+  static constexpr float begin_phase = 0;
+  static constexpr float end_phase = 1;
+  /**
+   * Set pulse width to a value between 0 and 1
+   */
+  void setPulseWidth(float value){
+    pw = value;
   }
-  float getPhase(){
-    // return phase 0 to 2*pi
-    return phase*M_PI+M_PI;
-  }
-  float generate(){
-    float sample = phase;
-    phase += incr;
-    if(phase >= 1.0f)
-      phase -= 2.0f;
+  float getSample(){
+    float sample = phase < pw ? 1 : -1;
+    sample += polyblep(incr, phase);
+    sample -= polyblep(incr, fmod(phase + 1 + pw, 2));
     return sample;
   }
-  void generate(FloatArray output){
-    size_t len = output.getSize();
-    float* dest = output;
-    while(phase + incr*len >= 1.0f){
-      float remain = 1.0f - phase;
-      size_t steps = (size_t)(remain/incr);
-      for(size_t i=0; i<steps; ++i){
-	*dest++ = phase;
-	phase += incr;
-      }
-      phase -= 2.0f;
-      len -= steps;
-    }
-    for(size_t i=0; i<len; ++i){
-      *dest++ = phase;
-      phase += incr;
-    }
+};
+
+class AntialiasedTriangleOscillator : public OscillatorTemplate<AntialiasedTriangleOscillator> {
+protected:
+  float pw = 0.5f;
+  float previousSample = 0;
+public:
+  static constexpr float begin_phase = 0;
+  static constexpr float end_phase = 1;
+  /**
+   * Set pulse width to a value between 0 and 1
+   */
+  void setPulseWidth(float value){
+    pw = value;
   }
-  float generate(float fm){
-    float sample = phase;
-    phase += incr + fm;
-    if(phase >= 1.0f)
-      phase -= 2.0f;
+  float getSample(){
+    float sample = phase < pw ? 1 : -1;
+    sample += polyblep(incr, phase);
+    sample -= polyblep(incr, fmod(phase + 1 + pw, 2));
+    // Leaky integrator: y[n] = A * x[n] + (1 - A) * y[n-1] = A * (x[n] - y[n-1]) + y[n-1]
+    float lambda = incr;
+    // float lambda = incr*2*M_PI;
+    sample = lambda * sample + (1 - lambda) * previousSample;
+    // sample = lambda * (sample - previousSample) + previousSample;
+    previousSample = sample;
     return sample;
-  }  
-  static RampOscillator* create(float sr){
-    return new RampOscillator(sr);
-  }
-  static RampOscillator* create(float freq, float sr){
-    return new RampOscillator(freq, sr);
-  }
-  static void destroy(RampOscillator* osc){
-    delete osc;
   }
 };
 

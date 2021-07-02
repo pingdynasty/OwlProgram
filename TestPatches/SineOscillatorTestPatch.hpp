@@ -6,23 +6,28 @@ public:
   SineOscillatorTestPatch(){
     {
       TEST("ctor");
-      SineOscillator osc(440, 16000);
+      SineOscillator osc;
+      osc.setSampleRate(16000);
+      osc.setFrequency(440);
       CHECK_EQUAL(osc.getSampleRate(), 16000);
       CHECK_EQUAL((int)osc.getFrequency(), 440);
-      osc = SineOscillator(32000);
+      osc = SineOscillator();
+      osc.setSampleRate(32000);
       CHECK_EQUAL(osc.getFrequency(), 0.0f);
       CHECK_EQUAL(osc.getSampleRate(), 32000);
     }
     {
       TEST("create");
-      SineOscillator* osc = SineOscillator::create(120, 32000);
+      SineOscillator* osc = SineOscillator::create(32000);
+      osc->setFrequency(120);
       CHECK_EQUAL(osc->getSampleRate(), 32000);
       CHECK_EQUAL(osc->getFrequency(), 120);
       SineOscillator::destroy(osc);
     }
     {
       TEST("setSampleRate");
-      SineOscillator* osc = SineOscillator::create(321, 44100);
+      SineOscillator* osc = SineOscillator::create(44100);
+      osc->setFrequency(321);
       CHECK_EQUAL(osc->getSampleRate(), 44100);
       CHECK_EQUAL(osc->getFrequency(), 321);
       osc->setSampleRate(48000);
@@ -32,8 +37,10 @@ public:
     }
     {
       TEST("compareBlockAndSampleBased");
-      SineOscillator* osc1 = SineOscillator::create(480, 48000);
-      SineOscillator* osc2 = SineOscillator::create(480, 48000);
+      SineOscillator* osc1 = SineOscillator::create(48000);
+      SineOscillator* osc2 = SineOscillator::create(48000);
+      osc1->setFrequency(480);      
+      osc2->setFrequency(480);      
       FloatArray s1 = FloatArray::create(1000);
       FloatArray s2 = FloatArray::create(1000);
       osc1->generate(s1);

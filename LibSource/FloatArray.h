@@ -195,6 +195,20 @@ public:
    * @param max maximum value
   */
   void clip(float min, float max);
+
+  /**
+   * Applies a cubic soft-clip algorithm to all elements in the array which limits them to the range [-1, 1]
+   * @param[out] destination the destination array
+   */
+  void softclip(FloatArray destination);
+
+  /**
+   * Applies a cubic soft-clip algorithm to all elements in the array which limits them to the range [-1, 1]
+   * In-place version.
+   */
+  void softclip(){
+    softclip(*this);
+  }  
   
   /**
    * Element-wise sum between arrays.
@@ -212,12 +226,20 @@ public:
   void add(FloatArray operand2); //in-place
   
   /**
-   * Array-scalar sum.
-   * Adds **scalar** to the values in the array.
-   * @param scalar value to be added to the array
+   * Array-scalar addition.
+   * Adds **scalar** to each value in the array and put the result in **destination**
+   * @param[in] scalar value to be added to the array
+   * @param[out] destination the destination array
+   */
+  void add(float scalar, FloatArray destination);
+
+  /**
+   * In-place array-scalar addition.
+   * Adds **scalar** to each value in the array
+   * @param[in] scalar value to be added to the array
   */
   void add(float scalar);
-  
+
   /**
    * Element-wise difference between arrays.
    * Sets each element in **destination** to the difference between the corresponding element of the array and **operand2**

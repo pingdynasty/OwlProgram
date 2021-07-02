@@ -3,6 +3,7 @@
 
 #include "Oscillator.h"
 
+template<InterpolationMethod im>
 class SampleOscillator : public Oscillator {
 public:
   enum RepeatMode {
@@ -45,14 +46,7 @@ public:
   void reset() {
     pos = 0;
   }
-  static float interpolate(float index, FloatArray data) {
-    size_t idx = (int)index;
-    float low = data[idx];
-    float high = data[idx + 1];
-    float frac = index - idx;
-    return CosineInterpolate(low, high, frac);
-    // return LinearInterpolate(low, high, frac);
-  }
+  float interpolate(float index, FloatArray data);
   void setPhase(float phase){
     pos = size*phase/(2*M_PI);
   }
@@ -127,6 +121,9 @@ public:
       pos += rate;
     }
   }
+  void generate(FloatArray output, FloatArray fm){
+    return generate(output);
+  }
   size_t findZeroCrossing(size_t index) {
     size_t len = buffer.getSize()-1;
     size_t i = min(index, len);
@@ -152,14 +149,24 @@ public:
   static void destroy(SampleOscillator* obj) {
     delete obj;
   }
-
-  static float LinearInterpolate(float y1, float y2, float mu){
-    return y1 + (y2 - y1) * mu;
-  }
-  static float CosineInterpolate(float y1, float y2, float mu){
-    float mu2 = (1-cosf(mu*M_PI))/2;
-    return y1*(1-mu2)+y2*mu2;
-  }
 };
+
+template<>
+float SampleOscillator<LINEAR_INTERPOLATION>::interpolate(float index, FloatArray data) {
+  size_t idx = (int)index;
+  float low = data[idx];
+  float high = data[idx + 1];
+  float frac = index - idx;
+  return Interpolator::linear(low, high, frac);
+}
+
+template<>
+float SampleOscillator<COSINE_INTERPOLATION>::interpolate(float index, FloatArray data) {
+  size_t idx = (int)index;
+  return Interpolator::cosine(data[idx], data[idx + 1], index - idx);
+}
+
+typedef SampleOscillator<LINEAR_INTERPOLATION> LinearSampleOscillator;
+typedef SampleOscillator<COSINE_INTERPOLATION> CosineSampleOscillator;
 
 #endif /* __SampleOscillator_h */

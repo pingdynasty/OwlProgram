@@ -4,11 +4,11 @@
 #include <stdint.h>
 #include <string.h> // for memcpy
 
-template<typename T = float>
+template<typename T>
 class CircularBuffer {
-private:
+protected:
   T* data;
-  const size_t size;
+  size_t size;
   size_t writepos = 0;
   size_t readpos = 0;
 public:
@@ -51,19 +51,6 @@ public:
     data[index % size] = value;
   }
 
-  /**
-   * Interpolated write at sub-sample index.
-   * Inserts a value linearly interpolated at a fractional index.
-   */
-  void interpolatedWriteAt(float index, T value){
-    size_t idx = (size_t)index;
-    T low = readAt(idx);
-    T high = readAt(idx+1);
-    float frac = index - idx;
-    writeAt(idx, low + (value-low)*frac);
-    writeAt(idx+1, value + (high-value)*frac);
-  }
-
   T read(){
     T c = data[readpos++];
     if(readpos >= size)
@@ -87,18 +74,6 @@ public:
   
   T readAt(size_t index){
     return data[index % size];
-  }
-
-  /**
-   * Interpolated read at sub-sample index.
-   * @return a value linearly interpolated at a fractional index
-   */
-  inline float interpolatedReadAt(float index){
-    size_t idx = (size_t)index;
-    T low = readAt(idx);
-    T high = readAt(idx+1);
-    float frac = index - idx;
-    return high+frac*(low-high);
   }
 
   void skipUntilLast(char c){
@@ -174,26 +149,10 @@ public:
   /**
    * Write to buffer and read with a delay
    */
-  void delay(T* in, T* out, size_t len, int delay){
-    setDelay(delay);
+  void delay(T* in, T* out, size_t len, int delay_samples){
+    setDelay(delay_samples); // set delay relative to where we start writing
     write(in, len);
     read(out, len);
-  }
-  
-  /**
-   * Write to buffer and read with a delay that ramps up or down
-   * from @param beginDelay to @param endDelay
-   */
-  void interpolatedDelay(T* in, T* out, size_t len, float beginDelay, float endDelay){
-    setDelay(beginDelay);
-    write(in, len);
-    float pos = readpos;
-    float incr = (len+endDelay-beginDelay)/len;
-    while(len--){
-      *out++ = interpolatedReadAt(pos);
-      pos += incr;
-    }
-    setDelay(endDelay);
   }
 
   size_t getReadCapacity(){

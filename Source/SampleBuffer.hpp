@@ -49,10 +49,6 @@ public:
   inline int getSize(){
     return blocksize;
   }
-  void add(AudioBuffer& other){
-    for(size_t i=0; i<channels; ++i)
-      getSamples(i).add(other.getSamples(i));
-  }
   static SampleBuffer* create(uint8_t format, size_t blocksize);
   static void destroy(SampleBuffer* obj){
     delete obj;

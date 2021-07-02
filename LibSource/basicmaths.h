@@ -27,16 +27,13 @@
 
 #ifdef __cplusplus
 #include <cmath>
+#include <algorithm>
+using std::min;
+using std::max;
+using std::abs;
+using std::clamp;
 #else
 #include <math.h>
-#endif
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-#ifndef M_SQRT2
-#define M_SQRT2 1.41421356237309504880
-#endif
 #ifndef min
 #define min(a,b) ((a)<(b)?(a):(b))
 #endif
@@ -46,6 +43,18 @@
 #ifndef abs
 #define abs(x) ((x)>0?(x):-(x))
 #endif
+#ifndef clamp
+#define clamp(x, lo, hi) ((x)>(hi)?(hi):((x)<(lo)?(lo):(x)))
+#endif
+#endif
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+#ifndef M_SQRT2
+#define M_SQRT2 1.41421356237309504880
+#endif
+
 
 #ifdef __cplusplus
  extern "C" {
@@ -93,8 +102,8 @@ void* pvPortRealloc(void *pv, size_t xWantedSize);
 #define sinf(x) arm_sin_f32(x)
 #define cos(x) arm_cos_f32(x)
 #define cosf(x) arm_cos_f32(x)
-#define sqrt(x) arm_sqrtf(x)
-#define sqrtf(x) arm_sqrtf(x)
+#define sqrt(x) sqrtf(x)
+/* #define sqrtf(x) arm_sqrtf(x) */
 #define rand() arm_rand32()
 
 #ifdef __FAST_MATH__ /* set by gcc option -ffast-math */
@@ -120,7 +129,12 @@ void* pvPortRealloc(void *pv, size_t xWantedSize);
 #define log10(x) fast_log10f(x)
 #define log10f(x) fast_log10f(x)
 
-#endif
+#else /* __FAST_MATH__ */
+
+#define exp10(x) powf(10, x)
+#define exp10f(x) powf(10, x)
+
+#endif /* __FAST_MATH__ */
 
 #undef RAND_MAX
 #define RAND_MAX UINT32_MAX

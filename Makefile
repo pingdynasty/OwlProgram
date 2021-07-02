@@ -172,16 +172,16 @@ as: patch ## build assembly file (Build/patch.s)
 native: $(DEPS) ## build native executable of patch
 	@$(MAKE) -s -f native.mk native
 
-test: $(DEPS) ## test patch locally
+test: $(DEPS) ## test patch natively
 	@$(MAKE) -s -f native.mk test
 
-run: $(DEPS) ## run patch locally
+run: $(DEPS) ## run patch natively
 	@$(MAKE) -s -f native.mk run
 
-grind: $(DEPS) ## run valgrind on patch locally
+grind: $(DEPS) ## run valgrind on patch natively
 	@$(MAKE) -s -f native.mk grind
 
-check:
+check: ## run test patches and unit tests natively
 	@for nm in $(TESTS) ; do \
 		$(MAKE) -s TEST=$$nm test || exit;\
 	done

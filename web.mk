@@ -51,7 +51,7 @@ EMCCFLAGS += -s WASM=0 # disables wasm output
 
 CPPFLAGS =
 CFLAGS   = $(EMCCFLAGS) -std=gnu11
-CXXFLAGS = $(EMCCFLAGS) -std=gnu++14
+CXXFLAGS = $(EMCCFLAGS) -std=gnu++17
 LDFLAGS  = $(EMCCFLAGS)
 
 EMCC_OBJS = $(addprefix $(WEBDIR)/, $(notdir $(CPP_SRC:.cpp=.o)))

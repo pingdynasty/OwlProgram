@@ -1,5 +1,5 @@
-#include "Envelope.h"
-#include "message.h"
+#include "LinearAdsrEnvelope.h"
+#include "basicmaths.h"
 
 /*
 void EnvelopeGenerator::calculateMultiplier(double startLevel,
@@ -9,65 +9,56 @@ void EnvelopeGenerator::calculateMultiplier(double startLevel,
 }
 */
 
-AdsrEnvelope::AdsrEnvelope(float sampleRate) :
-  samplePeriod(1.0/sampleRate),
+LinearAdsrEnvelope::LinearAdsrEnvelope(float sampleRate) :
+  sampleRate(sampleRate),
   stage(kIdle),
   trig(kGate),
   level(0.0),
   gateState(false),
   gateTime(-1) {
-  setAttack(0.0);
-  setDecay(0.0);
+  setAttack(1/sampleRate);
+  setDecay(1/sampleRate);
   setSustain(1.0);
-  setRelease(0.0);
+  setRelease(1/sampleRate);
   setRetrigger(false);
 }
 
-AdsrEnvelope::~AdsrEnvelope(){}
+LinearAdsrEnvelope::~LinearAdsrEnvelope(){}
 
-void AdsrEnvelope::setSampleRate(float sampleRate){
-  samplePeriod = 1.0/sampleRate;
+void LinearAdsrEnvelope::setSampleRate(float value){
+  sampleRate = value;
 }
 
-void AdsrEnvelope::setAttack(float newAttack){
-  if(newAttack > 0)
-    attackIncrement = samplePeriod / newAttack;
-  else
-    attackIncrement = 1;
+void LinearAdsrEnvelope::setAttack(float value){
+  attackIncrement = 1/(sampleRate*value);
 }
 
-void AdsrEnvelope::setDecay(float newDecay){
-  if(newDecay > 0)
-    decayIncrement = - samplePeriod / newDecay;
-  else
-    decayIncrement = - 1;
+void LinearAdsrEnvelope::setDecay(float value){
+  decayIncrement = - 1/(sampleRate*value);
 }
 
-void AdsrEnvelope::setRelease(float newRelease){
-  if(newRelease > 0)
-    releaseIncrement = - samplePeriod / newRelease;
-  else
-    releaseIncrement = -1;
+void LinearAdsrEnvelope::setRelease(float value){
+  releaseIncrement = - 1/(sampleRate*value);
 }
 
-void AdsrEnvelope::setSustain(float newSustain){
+void LinearAdsrEnvelope::setSustain(float newSustain){
   sustain = newSustain;
 }
 
-void AdsrEnvelope::setRetrigger(bool state){
+void LinearAdsrEnvelope::setRetrigger(bool state){
   retrigger = state;
 }
 
-void AdsrEnvelope::trigger(bool state, int delay){
+void LinearAdsrEnvelope::trigger(bool state, int delay){
   gate(state, delay);
   trig = kTrigger;
 }
 
-void AdsrEnvelope::gate(bool state){
+void LinearAdsrEnvelope::gate(bool state){
   gate(state, 0);
 }
 
-void AdsrEnvelope::gate(bool state, int delay){
+void LinearAdsrEnvelope::gate(bool state, int delay){
   if(gateState != state){
     gateTime = delay;
     gateState = state;
@@ -75,15 +66,15 @@ void AdsrEnvelope::gate(bool state, int delay){
   trig = kGate;
 }
 
-float AdsrEnvelope::getLevel(){
+float LinearAdsrEnvelope::getLevel(){
   return level;
 }
 
-void AdsrEnvelope::setLevel(float newLevel){
+void LinearAdsrEnvelope::setLevel(float newLevel){
   level = newLevel;
 }
 
-float AdsrEnvelope::generate(){
+float LinearAdsrEnvelope::generate(){
   if(gateTime == 0){
     stage = kAttack;
     if(trig == kTrigger){

@@ -64,15 +64,15 @@ public:
   }
   virtual void controlChange(MidiMessage msg) override {
     if(msg.getControllerNumber() == MIDI_CC_MODULATION)
-      setModulation(msg.getControllerValue()/127.0f);
+      setModulation(msg.getControllerValue()/128.0f);
     else if(msg.getControllerNumber() == MIDI_ALL_NOTES_OFF)
       allNotesOff();
   }
   virtual void channelPressure(MidiMessage msg) override {
-    setPressure(msg.getChannelPressure()/127.0f);
+    setPressure(msg.getChannelPressure()/128.0f);
   }
   virtual void polyKeyPressure(MidiMessage msg) override {
-    setPressure(msg.getPolyKeyPressure()/127.0f);
+    setPressure(msg.getPolyKeyPressure()/128.0f);
   }
   virtual void setModulation(float modulation){} // default implementation does nothing
   virtual void setPressure(float pressure){}

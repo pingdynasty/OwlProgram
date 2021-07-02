@@ -43,7 +43,7 @@ int main(int argc, char** argv){
   ASSERT(getInitialisingPatchProcessor()->patch != NULL, "Missing test patch");    
   AudioBuffer* samples = AudioBuffer::create(CHANNELS, BLOCKSIZE);
   getInitialisingPatchProcessor()->patch->processAudio(*samples);
-  delete samples;
+  AudioBuffer::destroy(samples);
   delete getInitialisingPatchProcessor()->patch;  
   return errorcode;
 }

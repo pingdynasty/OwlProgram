@@ -1,6 +1,13 @@
 v21.2
 -----
 
+* Added FloatArray::softclip()
+* Added clamp(x, lo, hi) macro
+* Added TapTempo
+* Added DryWetProcessors
+* Added FeedbackProcessors
+* Added CrossFadingDelayProcessor
+* Added AudioBuffer::copyFrom(), copyTo(), multiply() and add()
 * Added Sample oscillator
 * Added Agnesi curve oscillator
 * Added MPE processor

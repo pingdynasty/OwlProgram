@@ -22,6 +22,9 @@ OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "genlib_common.h"	// common to common code and any host code
 #include "genlib.h"			// this file is different for different "hosts"
+#ifdef clamp
+#undef clamp
+#endif
 
 //////////// genlib_ops.h ////////////
 

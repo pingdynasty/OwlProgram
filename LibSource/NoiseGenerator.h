@@ -24,10 +24,10 @@ class WhiteNoiseGenerator : public SignalGenerator {
     // https://en.wikipedia.org/wiki/Single-precision_floating-point_format
     return x.f;
 #else
-    return (rand()/(float)RAND_MAX) * 2 - 1;
+    return randf()*2 - 1;
 #endif
   }
-
+  using SignalGenerator::generate;
   static WhiteNoiseGenerator* create(){
     return new WhiteNoiseGenerator();
   }
@@ -86,6 +86,7 @@ public:
     m_count++; 
     return (WhiteNoiseGenerator::generate() + m_pink)*0.125f; 
   }
+  using SignalGenerator::generate;
   static PinkNoiseGenerator* create(){
     return new PinkNoiseGenerator();
   }
@@ -109,10 +110,8 @@ public:
     m_brown = 0.0f;
   }
   // returns brown noise random number in the range -0.5 to 0.5
-  //
   float generate() {
-    while (true)
-    {
+    while (true){
       float  r = WhiteNoiseGenerator::generate();
       m_brown += r;
       if (m_brown<-8.0f || m_brown>8.0f) 
@@ -122,6 +121,7 @@ public:
     }
     return m_brown*0.0625f;
   }  
+  using SignalGenerator::generate;
   static BrownNoiseGenerator* create(){
     return new BrownNoiseGenerator();
   }
@@ -136,12 +136,10 @@ private:
   int phase;
 public:
   GaussianNoiseGenerator(FloatArray ns) : noise(ns), phase(0) {}
-
   static void destroy(GaussianNoiseGenerator* gn){
     FloatArray::destroy(gn->noise);
     delete gn;
   }
-
   static GaussianNoiseGenerator* create(int size){
     GaussianNoiseGenerator* gn = new GaussianNoiseGenerator(FloatArray::create(size));
     // generate white gaussian noise:
@@ -171,10 +169,10 @@ public:
 
   float generate(){
     float sample = noise[phase];
-    if(++phase == noise.getSize())
-      phase = 0;
+    phase = randf()*noise.getSize();
     return sample;
   }
+  using SignalGenerator::generate;
 };
 
 

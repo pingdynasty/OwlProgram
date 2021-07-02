@@ -251,8 +251,13 @@ void FloatArray::add(FloatArray operand2){ //in-place
 
 void FloatArray::add(float scalar){
   for(size_t n=0; n<size; n++){
-    data[n]+=scalar;
+    data[n] += scalar;
   } 
+}
+
+void FloatArray::add(float scalar, FloatArray destination){
+  for(size_t n=0; n<size; n++)
+    destination[n] = data[n]+scalar;
 }
 
 void FloatArray::subtract(FloatArray operand2, FloatArray destination){ //allows in-place
@@ -440,9 +445,22 @@ void FloatArray::scale(float from, float to, FloatArray destination){
   }  
 }
 
+/*
+ * Third-order static soft-clipping function.
+ * ref:  T. Araya and A. Suyama, “Sound effector capable of
+ * imparting plural sound effects like distortion and other
+ * effects,” US Patent 5,570,424, 29 Oct. 1996.
+ */
+void FloatArray::softclip(FloatArray destination){
+  for(size_t i=0; i<size; i++){
+    float x = data[i];
+    destination[i] = clamp((3*x/2)*(1-x*x/3), -1.0f, 1.0f);
+  }
+}
+
 void FloatArray::tanh(FloatArray destination){
   for(size_t i=0; i<size; i++)
-    destination[i] = tanhf(data[i]);  
+    destination[i] = tanhf(data[i]);
 }
 
 FloatArray FloatArray::create(int size){
