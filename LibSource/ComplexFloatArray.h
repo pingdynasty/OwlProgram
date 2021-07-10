@@ -75,6 +75,29 @@ struct ComplexFloat {
     im = magnitude*sinf(phase);
   }
 
+  float getMagnitudeSquared() {
+    return re * re + im * im;
+  }
+
+  ComplexFloat getComplexConjugate() {
+    return ComplexFloat {re, -im};
+  }
+
+  ComplexFloat getDotProduct(ComplexFloat other) {
+    return ComplexFloat {re * other.re - im  * other.im, re * other.im + im * other.re};
+  }
+
+  /**
+   * Copy assignment
+   */
+  ComplexFloat& operator=(const ComplexFloat& other) {
+    if (this != &other) {
+      re = other.re;
+      im = other.im;
+    }
+    return *this;
+  }
+
   bool operator<(const ComplexFloat& other) const {
     return getMagnitudeSquared() < other.getMagnitudeSquared();
   }
@@ -97,6 +120,90 @@ struct ComplexFloat {
   
   bool operator!=(const ComplexFloat& other) const {
     return re != other.re || im != other.im;
+  }
+
+  friend const ComplexFloat operator+(const ComplexFloat&lhs, const ComplexFloat& rhs) {
+    ComplexFloat result = lhs;
+    result += rhs;
+    return result;
+  }
+
+  friend const ComplexFloat operator+(const ComplexFloat&lhs, float rhs) {
+    ComplexFloat result = lhs;
+    result += rhs;
+    return result;
+  }
+
+  ComplexFloat& operator+=(float other) {
+    re += other;
+    im += other;
+    return *this;
+  }
+
+  ComplexFloat& operator+=(const ComplexFloat& other) {
+    re += other.re;
+    im += other.im;
+    return *this;
+  }
+
+  friend const ComplexFloat operator-(const ComplexFloat&lhs, const ComplexFloat& rhs) {
+    ComplexFloat result = lhs;
+    result -= rhs;
+    return result;
+  }
+
+  friend const ComplexFloat operator-(const ComplexFloat&lhs, float rhs) {
+    ComplexFloat result = lhs;
+    result -= rhs;
+    return result;
+  }
+
+  ComplexFloat& operator-=(float other) {
+    re -= other;
+    im -= other;
+    return *this;
+  }
+
+  ComplexFloat& operator-=(const ComplexFloat& other) {
+    re -= other.re;
+    im -= other.im;
+    return *this;
+  }
+
+  friend const ComplexFloat operator*(const ComplexFloat&lhs, const ComplexFloat& rhs) {
+    ComplexFloat result = lhs;
+    result *= rhs;
+    return result;
+  }
+
+  friend const ComplexFloat operator*(const ComplexFloat&lhs, float rhs) {
+    ComplexFloat result = lhs;
+    result *= rhs;
+    return result;
+  }
+
+  ComplexFloat& operator*=(float other) {
+    re *= other;
+    im *= other;
+    return *this;
+  }
+
+  ComplexFloat& operator*=(const ComplexFloat& other) {
+    re = re * other.re - im * other.im;
+    im = re * other.im + im * other.re;
+    return *this;
+  }
+
+  friend const ComplexFloat operator/(const ComplexFloat&lhs, float rhs) {
+    ComplexFloat result = lhs;
+    result /= rhs;
+    return result;
+  }
+
+  ComplexFloat& operator/=(float other) {
+    re /= other;
+    im /= other;
+    return *this;
   }
 
 };
