@@ -7,11 +7,10 @@
 
 /**
  * A complex oscillator is a MultiSignalGenerator with 2 channels that
- * operates at a given frequency and that can be frequency modulated. Output
- * signal is stereo signal.
- * 
+ * operates at a given frequency and that can be frequency modulated.
+ *
  * A single sample is represented as a ComplexFloat value, while blocks
- * of audio are stored as AudioBuffer with 2 channels.
+ * of audio are stored in an AudioBuffer with 2 channels.
  */
 class ComplexOscillator : public MultiSignalGenerator {
 public:

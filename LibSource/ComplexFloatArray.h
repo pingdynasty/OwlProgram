@@ -80,12 +80,11 @@ struct ComplexFloat {
   }
 
   /**
-   * Returns complet conjugate - a copy of current number with imaginary part inverted
+   * Returns complex conjugate - a copy of current number with imaginary part inverted
    */
   ComplexFloat getComplexConjugate() const {
     return ComplexFloat {re, -im};
   }
-
 
   /**
    * Returns dot product with another complex float value
