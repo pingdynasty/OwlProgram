@@ -1,9 +1,9 @@
 #ifndef QUADRATURE_SINE_OSCILLATOR_H
 #define QUADRATURE_SINE_OSCILLATOR_H
 
-#include "StereoOscillator.h"
+#include "ComplexOscillator.h"
 
-class QuadratureSineOscillator : public StereoOscillatorTemplate<QuadratureSineOscillator> {
+class QuadratureSineOscillator : public ComplexOscillatorTemplate<QuadratureSineOscillator> {
 public:
     static constexpr float begin_phase = 0;
     static constexpr float end_phase = 2 * M_PI;
@@ -33,7 +33,7 @@ public:
         }
         phase = fmodf(phase, end_phase);
     }
-    using StereoOscillatorTemplate<QuadratureSineOscillator>::generate;
+    using ComplexOscillatorTemplate<QuadratureSineOscillator>::generate;
 };
 
 #endif /* QUADRATURE_SINE_OSCILLATOR_H */

@@ -1,19 +1,22 @@
-#ifndef __QUADRATURE_OSCILLATOR_H__
-#define __QUADRATURE_OSCILLATOR_H__
+#ifndef __COMPLEX_OSCILLATOR_H__
+#define __COMPLEX_OSCILLATOR_H__
 
 #include "SignalGenerator.h"
 #include "Oscillator.h"
 #include "ComplexFloatArray.h"
 
 /**
- * A stereo oscillator is a MultiSignalGenerator with 2 channels that
+ * A complex oscillator is a MultiSignalGenerator with 2 channels that
  * operates at a given frequency and that can be frequency modulated. Output
- * signal is a complex number.
+ * signal is stereo signal.
+ * 
+ * A single sample is represented as a ComplexFloat value, while blocks
+ * of audio are stored as AudioBuffer with 2 channels.
  */
-class StereoOscillator : public MultiSignalGenerator {
+class ComplexOscillator : public MultiSignalGenerator {
 public:
-  StereoOscillator() = default;
-  virtual ~StereoOscillator() = default;
+  ComplexOscillator() = default;
+  virtual ~ComplexOscillator() = default;
   using MultiSignalGenerator::generate;
   /**
    * Set oscillator sample rate
@@ -60,5 +63,5 @@ public:
 };
 
 template<typename OscillatorClass>
-using StereoOscillatorTemplate = OscillatorTemplate<OscillatorClass, StereoOscillator, ComplexFloat>;
+using ComplexOscillatorTemplate = OscillatorTemplate<OscillatorClass, ComplexOscillator, ComplexFloat>;
 #endif

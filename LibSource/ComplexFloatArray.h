@@ -7,6 +7,10 @@
 * A structure defining a floating point complex number as two members of type float.
 */
 struct ComplexFloat {
+  constexpr ComplexFloat() : re(0), im(0) {}
+  constexpr ComplexFloat(float x) : re(x), im(0) {}
+  constexpr ComplexFloat(float re, float im) : re(re), im(im) {}
+
   /**
    * The real part of the complex number.
    */
@@ -75,27 +79,19 @@ struct ComplexFloat {
     im = magnitude*sinf(phase);
   }
 
-  float getMagnitudeSquared() {
-    return re * re + im * im;
-  }
-
-  ComplexFloat getComplexConjugate() {
+  /**
+   * Returns complet conjugate - a copy of current number with imaginary part inverted
+   */
+  ComplexFloat getComplexConjugate() const {
     return ComplexFloat {re, -im};
   }
 
-  ComplexFloat getDotProduct(ComplexFloat other) {
-    return ComplexFloat {re * other.re - im  * other.im, re * other.im + im * other.re};
-  }
 
   /**
-   * Copy assignment
+   * Returns dot product with another complex float value
    */
-  ComplexFloat& operator=(const ComplexFloat& other) {
-    if (this != &other) {
-      re = other.re;
-      im = other.im;
-    }
-    return *this;
+  ComplexFloat getDotProduct(ComplexFloat other) const {
+    return ComplexFloat {re * other.re - im  * other.im, re * other.im + im * other.re};
   }
 
   bool operator<(const ComplexFloat& other) const {
