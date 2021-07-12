@@ -65,8 +65,8 @@ public:
   }
 };
 
-template<class T>
-class OscillatorTemplate : public Oscillator {
+template<class T, class BaseOscillator=Oscillator, typename Sample=float>
+class OscillatorTemplate : public BaseOscillator {
 protected:
   float mul;
   float phase;
@@ -96,21 +96,21 @@ public:
   void reset(){
     phase = T::begin_phase;
   }
-  float generate(){
-    float sample = static_cast<T*>(this)->getSample();
+  Sample generate() override {
+    Sample sample = static_cast<T*>(this)->getSample();
     phase += incr;
     if(phase >= T::end_phase)
       phase -= (T::end_phase - T::begin_phase);
     return sample;
   }
-  float generate(float fm){
-    float sample = static_cast<T*>(this)->getSample();
+  Sample generate(float fm) override {
+    Sample sample = static_cast<T*>(this)->getSample();
     phase += incr * (1 + fm);
     if(phase >= T::end_phase)
       phase -= (T::end_phase - T::begin_phase);
     return sample;
   }  
-  using Oscillator::generate;
+  using BaseOscillator::generate;
   static T* create(float sr){
     T* obj = new T();
     obj->setSampleRate(sr);
