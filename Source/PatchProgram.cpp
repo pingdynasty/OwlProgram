@@ -92,10 +92,10 @@ void setup(ProgramVector* pv){
 #endif /* USE_MIDI_CALLBACK */
   if(samples != NULL)
     SampleBuffer::destroy(samples);
+#include "registerpatch.cpp"
   samples = SampleBuffer::create(pv->audio_format, pv->audio_blocksize);
   if(samples == NULL)
     error(CONFIGURATION_ERROR_STATUS, "Unsupported audio format");
-#include "registerpatch.cpp"
 }
 
 void run(ProgramVector* pv){
